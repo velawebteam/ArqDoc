@@ -1,0 +1,6 @@
+{
+  "name": "ArqDoc - Gestão Documental para Arquitetura e Engenharia",
+  "description": "Plataforma de geração de documentação técnica automática para gabinetes de arquitetura e engenharia em Portugal. Gera Memórias Descritivas, Termos de Responsabilidade e Propostas Comerciais.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

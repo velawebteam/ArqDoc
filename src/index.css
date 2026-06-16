@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300..700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Libre Baskerville", Georgia, serif;
+  --font-display: "Space Grotesk", sans-serif;
+
+  --color-canvas: var(--canvas-bg);
+  --color-surface: var(--surface-bg);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border-main: var(--border-color);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+}
+
+@layer base {
+  :root {
+    --canvas-bg: #F9F8F6;
+    --surface-bg: #ffffff;
+    --surface-secondary: #F3F4F6;
+    --border-color: #EAE1D7;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6B7280;
+    --accent: #1a1a1a;
+  }
+
+  :root[data-theme='dark'] {
+    --canvas-bg: #0D0D12;
+    --surface-bg: #16161E;
+    --surface-secondary: #1F1F2B;
+    --border-color: #2D2D3A;
+    --text-primary: #F3F4F6;
+    --text-secondary: #9CA3AF;
+    --accent: #ffffff;
+  }
+
+  body {
+    @apply antialiased;
+    background-color: var(--canvas-bg);
+    color: var(--text-primary);
+  }
+
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}
