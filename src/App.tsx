@@ -1150,31 +1150,6 @@ export default function App() {
         }
       };
 
-      const promptText = `
-${SYSTEM_PROMPT}
-
-## DATA INPUT (JSON)
-
-PROJECT_MASTER_DATA:
-${JSON.stringify(inputData.project_master_data, null, 2)}
-
-OFFICE_DATA:
-${JSON.stringify(inputData.office_data, null, 2)}
-
-STUDIO_STYLE_PROFILE:
-${inputData.studio_style_profile ? JSON.stringify(inputData.studio_style_profile, null, 2) : 'No specific style profile.'}
-
-DOCUMENT_TYPE_REQUESTED: ${docType}
-
-MANDATORY_LEGAL_BLOCKS:
-${inputData.legal_compliance.mandatory_blocks.map((b, i) => `${i+1}. ${b}`).join('\n')}
-
-REFERENCE_TEMPLATES:
-${(office.templateFilesContent || []).join('\n\n') || office.templateSnippets || 'No templates provided.'}
-
-## FINAL INSTRUCTION
-Generate the requested document in European Portuguese using the provided data.
-`;
       const response = await fetch("https://hook.eu1.make.com/436eqlnlgltufn25qyy38g8wj6vu9mtk", {
         method: "POST",
         headers: {
@@ -1204,8 +1179,7 @@ Generate the requested document in European Portuguese using the provided data.
             master_data: currentProject.masterData,
             financial_model: currentProject.financialModel
           },
-          input_data: inputData,
-          prompt_context: promptText // Contexto para o Make
+          input_data: inputData
         }),
       });
 
@@ -4570,7 +4544,17 @@ Generate the requested document in European Portuguese using the provided data.
                             key={type}
                             onClick={() => setProject({
                               ...project,
-                              technical: { ...project.technical, config: { ...(project.technical.config || {}), type } }
+                              technical: { 
+                                ...project.technical, 
+                                config: { 
+                                  ...(project.technical.config || {
+                                    constructionSystem: 'Betão Armado',
+                                    roofType: 'Plana (Terraço)',
+                                    exteriorFinish: 'ETICS (Capoto)'
+                                  }), 
+                                  type 
+                                } 
+                              }
                             })}
                             className={`p-6 border rounded-xl text-left transition-all ${
                               project.technical.config?.type === type
