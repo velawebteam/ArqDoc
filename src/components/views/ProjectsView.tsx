@@ -43,11 +43,11 @@ const ProjectItem = ({ project, onOpen, onDelete }: { project: ProjectData, onOp
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {project.status === 'active' ? (
-              <Clock className="w-3.5 h-3.5 text-blue-500" />
+              <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             ) : (
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             )}
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${project.status === 'active' ? 'text-blue-500' : 'text-green-500'}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${project.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {project.status === 'active' ? 'Em Curso' : 'Finalizado'}
             </span>
           </div>
@@ -210,8 +210,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
       {filteredProjects.length === 0 ? (
         <div className="bg-[var(--surface-bg)] border border-dashed border-[var(--border-color)] rounded-3xl p-20 text-center space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-            <Briefcase className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+          <div className="bg-surface-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-border-main">
+            <Briefcase className="w-8 h-8 text-text-secondary" />
           </div>
           <div className="space-y-1">
             <p className="text-gray-500 font-medium text-lg">Nenhum projeto encontrado nesta categoria.</p>

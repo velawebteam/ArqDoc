@@ -596,6 +596,15 @@ export default function App() {
 
   const [showRestoreList, setShowRestoreList] = useState(false);
 
+  const [hasSeenBetaWelcome, setHasSeenBetaWelcome] = useState(() => {
+    return localStorage.getItem('arqdoc_beta_welcome_seen') === 'true';
+  });
+
+  const dismissBetaWelcome = () => {
+    localStorage.setItem('arqdoc_beta_welcome_seen', 'true');
+    setHasSeenBetaWelcome(true);
+  };
+
   useEffect(() => {
     localStorage.setItem('arqdoc_deleted_services', JSON.stringify(deletedServices));
   }, [deletedServices]);
@@ -1305,6 +1314,69 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-canvas text-text-primary font-sans selection:bg-border-main flex transition-colors duration-300">
+      <AnimatePresence mode="wait">
+        {!hasSeenBetaWelcome && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-canvas/80 backdrop-blur-xl"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 1.05, opacity: 0, y: -20 }}
+              className="max-w-2xl w-full bg-surface border border-border-main rounded-[2.5rem] p-12 md:p-16 shadow-2xl shadow-black/20 text-center space-y-10 relative overflow-hidden"
+            >
+              {/* Background Accent */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -mr-32 -mt-32" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -ml-32 -mb-32" />
+
+              <div className="space-y-6 relative">
+                <h2 className="text-4xl md:text-5xl font-light tracking-tight font-display leading-[1.1]">
+                  Bem-vindo à fase <span className="font-medium text-accent italic">Beta</span>.
+                </h2>
+                
+                <div className="space-y-6 text-text-secondary text-lg leading-relaxed max-w-xl mx-auto font-light">
+                  <p>
+                    Esta plataforma foi desenvolvida para ajudar arquitetos e gabinetes a criar documentos de forma mais rápida, consistente e profissional.
+                  </p>
+                  <p>
+                    Estamos numa fase de melhoria contínua e novas funcionalidades serão adicionadas regularmente. O seu feedback é essencial para nos ajudar a aperfeiçoar a plataforma e garantir que responde às necessidades reais dos profissionais de arquitetura.
+                  </p>
+                  <p className="font-medium text-text-primary pt-2">
+                    Obrigado por fazer parte desta fase de desenvolvimento.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 relative">
+                <button 
+                  onClick={dismissBetaWelcome}
+                  className="bg-text-primary text-surface px-12 py-4 rounded-full font-bold text-sm uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl shadow-black/10 group active:scale-95"
+                >
+                  Começar Exploração
+                </button>
+              </div>
+
+              <div className="pt-8 border-t border-border-main/50 flex items-center justify-center gap-6 relative">
+                 <div className="flex flex-col items-center">
+                   <div className="text-[10px] font-bold uppercase tracking-widest text-text-secondary mb-1">Versão</div>
+                   <div className="text-xs font-mono text-text-primary bg-surface-secondary px-2 py-0.5 rounded border border-border-main">v0.8.4-beta</div>
+                 </div>
+                 <div className="w-px h-8 bg-border-main" />
+                 <div className="flex flex-col items-center">
+                   <div className="text-[10px] font-bold uppercase tracking-widest text-text-secondary mb-1">Estado</div>
+                   <div className="text-xs font-bold text-emerald-500 flex items-center gap-1.5">
+                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                     Sistemas Ativos
+                   </div>
+                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {view !== 'editor' && <Sidebar currentView={view} onNavigate={navigateTo} />}
       
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
