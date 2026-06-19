@@ -50,7 +50,8 @@ import {
   PlusCircle,
   BarChart3,
   Wrench,
-  ShieldAlert
+  ShieldAlert,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import mammoth from 'mammoth';
@@ -588,6 +589,17 @@ export default function App() {
     return defaultOffice;
   });
 
+  const [deletedServices, setDeletedServices] = useState<ServiceDefinition[]>(() => {
+    const saved = localStorage.getItem('arqdoc_deleted_services');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [showRestoreList, setShowRestoreList] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('arqdoc_deleted_services', JSON.stringify(deletedServices));
+  }, [deletedServices]);
+
   // Client Management Handlers
   const addClient = (name: string, details: Partial<Client>) => {
     const newClient: Client = {
@@ -703,6 +715,7 @@ export default function App() {
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('arqdoc_view', view);
+    window.scrollTo(0, 0);
   }, [view]);
 
   useEffect(() => {
@@ -773,7 +786,16 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('arqdoc_step', step.toString());
+    window.scrollTo(0, 0);
   }, [step]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [isEditingGlobalOffice]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [showLegalIdentity]);
 
   // Office to Project Synchronization Effect
   useEffect(() => {
@@ -900,7 +922,7 @@ export default function App() {
     };
     setOffice(prev => ({
       ...prev,
-      servicesLibrary: [...prev.servicesLibrary, newService]
+      servicesLibrary: [newService, ...prev.servicesLibrary]
     }));
   };
 
@@ -912,10 +934,25 @@ export default function App() {
   };
 
   const deleteLibraryService = (id: string) => {
+    const serviceToDelete = office.servicesLibrary.find(s => s.id === id);
+    if (serviceToDelete) {
+      setDeletedServices(prev => [serviceToDelete, ...prev]);
+    }
     setOffice(prev => ({
       ...prev,
       servicesLibrary: prev.servicesLibrary.filter(s => s.id !== id)
     }));
+  };
+
+  const restoreLibraryService = (id: string) => {
+    const serviceToRestore = deletedServices.find(s => s.id === id);
+    if (serviceToRestore) {
+      setOffice(prev => ({
+        ...prev,
+        servicesLibrary: [serviceToRestore, ...prev.servicesLibrary]
+      }));
+      setDeletedServices(prev => prev.filter(s => s.id !== id));
+    }
   };
 
   const toggleProjectMulti = (level: 'base' | 'commercial' | 'operational' | 'technical' | 'legal', key: string, value: string) => {
@@ -4077,8 +4114,8 @@ export default function App() {
                     <p className="text-text-secondary text-lg">Defina o estilo e os serviços incluídos.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 items-stretch">
+                    <div className="flex flex-col space-y-6">
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-text-secondary">Nome do Gabinete</label>
                         <input 
@@ -4287,17 +4324,71 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                    <div className="flex flex-col h-full overflow-hidden">
+                      <div className="flex items-center justify-between shrink-0 mb-4">
                         <label className="text-xs font-bold uppercase tracking-widest text-text-secondary">Biblioteca de Serviços do Gabinete</label>
-                        <button 
-                          onClick={addLibraryService}
-                          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:opacity-70 bg-surface-secondary px-2 py-1 rounded border border-border-main transition-all"
-                        >
-                          <Plus className="w-3 h-3" /> Novo
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {deletedServices.length > 0 && (
+                            <button 
+                              onClick={() => setShowRestoreList(!showRestoreList)}
+                              className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border transition-all ${
+                                showRestoreList 
+                                  ? "bg-text-primary text-surface border-text-primary" 
+                                  : "bg-surface-secondary text-text-primary border-border-main hover:opacity-70"
+                              }`}
+                            >
+                              <RotateCcw className="w-3 h-3" /> Restaurar
+                            </button>
+                          )}
+                          <button 
+                            onClick={addLibraryService}
+                            className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:opacity-70 bg-surface-secondary px-2 py-1 rounded border border-border-main transition-all"
+                          >
+                            <Plus className="w-3 h-3" /> Novo
+                          </button>
+                        </div>
                       </div>
-                      <div className="space-y-2 max-h-[640px] overflow-y-auto pr-2">
+
+                      <AnimatePresence>
+                        {showRestoreList && deletedServices.length > 0 && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="mb-4 overflow-hidden"
+                          >
+                            <div className="p-4 bg-surface-secondary border border-dashed border-border-main rounded-lg space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-text-secondary italic">Serviços Apagados Recentemente</h4>
+                                <button 
+                                  onClick={() => setShowRestoreList(false)}
+                                  className="text-[10px] font-bold uppercase tracking-widest text-text-secondary hover:text-text-primary"
+                                >
+                                  Fechar
+                                </button>
+                              </div>
+                              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                {deletedServices.map(service => (
+                                  <div key={service.id} className="flex items-center justify-between p-2 bg-surface rounded border border-border-main">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-bold text-text-primary truncate">{service.name}</p>
+                                      <p className="text-[10px] text-text-secondary truncate">{service.phase}</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => restoreLibraryService(service.id)}
+                                      className="ml-4 flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:underline"
+                                    >
+                                      <RotateCcw className="w-2.5 h-2.5" /> Restaurar
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <div className="space-y-2 flex-1 min-h-0 max-h-[1180px] overflow-y-auto pr-2 pb-2">
                         {(office.servicesLibrary || []).map(service => (
                           <div key={service.id} className="p-3 bg-surface border border-border-main rounded-lg space-y-3 transition-colors">
                             <div className="flex items-start justify-between">
@@ -4692,8 +4783,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-surface border border-border-main shadow-sm rounded-lg p-12 min-h-[600px] font-serif leading-loose text-text-primary text-lg lg:text-xl transition-colors">
-                    <div className="markdown-body max-w-3xl mx-auto">
+                  <div className="bg-surface border border-border-main shadow-sm rounded-lg p-6 md:p-12 min-h-[600px] font-serif leading-loose text-text-primary text-lg lg:text-xl transition-colors">
+                    <div className="markdown-body max-w-3xl mx-auto break-words overflow-x-auto">
                       <ReactMarkdown>{generatedDoc || ''}</ReactMarkdown>
                     </div>
                   </div>
@@ -4928,6 +5019,200 @@ export default function App() {
                 onDeleteProject={deleteProject}
               />
             )}
+            {view === 'library' && (
+              <div className="max-w-5xl mx-auto py-12 space-y-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border-main pb-8">
+                  <div className="space-y-4">
+                    <button 
+                      onClick={() => navigateTo('settings')}
+                      className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors text-[10px] font-bold uppercase tracking-[0.2em] group"
+                    >
+                      <ChevronLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" /> Voltar às Configurações
+                    </button>
+                    <div className="space-y-2">
+                       <h1 className="text-4xl font-light tracking-tight font-display">Biblioteca de Serviços</h1>
+                       <p className="text-text-secondary text-lg">Faça a gestão dos serviços predefinidos que o seu gabinete utiliza para gerar propostas.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                      {deletedServices.length > 0 && (
+                        <button 
+                          onClick={() => setShowRestoreList(!showRestoreList)}
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-md border transition-all text-xs font-bold uppercase tracking-widest ${
+                            showRestoreList 
+                              ? "bg-text-primary text-surface border-text-primary shadow-lg" 
+                              : "bg-surface text-text-primary border-border-main hover:bg-surface-secondary"
+                          }`}
+                        >
+                          <RotateCcw className={`w-4 h-4 transition-transform ${showRestoreList ? 'rotate-180' : ''}`} /> {showRestoreList ? 'Ocultar Histórico' : 'Ver Apagados'}
+                        </button>
+                      )}
+                      <button 
+                        onClick={addLibraryService}
+                        className="flex items-center gap-2 bg-accent text-canvas px-6 py-2.5 rounded-md hover:opacity-90 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shadow-black/10"
+                      >
+                        <Plus className="w-4 h-4" /> Novo Serviço
+                      </button>
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {showRestoreList && deletedServices.length > 0 && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden mb-8"
+                    >
+                      <div className="p-8 bg-surface-secondary border border-dashed border-border-main rounded-2xl space-y-6">
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             <RotateCcw className="w-4 h-4 text-text-secondary" />
+                             <h3 className="text-xs font-bold uppercase tracking-widest text-text-secondary italic">Histórico de Serviços Removidos</h3>
+                           </div>
+                           <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-surface border border-border-main rounded text-text-secondary">
+                             {deletedServices.length} itens
+                           </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {deletedServices.map(service => (
+                            <div key={service.id} className="flex items-center justify-between p-4 bg-surface rounded-xl border border-border-main shadow-sm group">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-text-primary truncate">{service.name}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary px-1.5 py-0.5 bg-surface-secondary rounded border border-border-main">
+                                    {service.phase}
+                                  </span>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => restoreLibraryService(service.id)}
+                                className="ml-4 p-2 text-text-secondary hover:text-accent transition-colors hover:bg-accent/5 rounded-lg"
+                                title="Restaurar"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {office.servicesLibrary.map((service, index) => (
+                    <motion.div 
+                      key={service.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="p-8 bg-surface border border-border-main rounded-2xl shadow-sm space-y-6 hover:border-accent/30 transition-all group flex flex-col h-full relative"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-3 flex-1">
+                           <div className="flex items-center gap-2">
+                             <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 bg-accent/5 text-accent border border-accent/20 rounded">
+                               {service.phase}
+                             </span>
+                           </div>
+                           <input
+                             type="text"
+                             value={service.name}
+                             onChange={(e) => updateLibraryService(service.id, { name: e.target.value })}
+                             className="block w-full bg-transparent text-xl font-bold text-text-primary focus:outline-none focus:ring-0 placeholder:text-text-secondary/30 transition-all border-b border-transparent focus:border-accent/30 pb-1"
+                             placeholder="Nome do serviço..."
+                           />
+                        </div>
+                        <button 
+                          onClick={() => deleteLibraryService(service.id)}
+                          className="p-2.5 text-text-secondary opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 border border-transparent hover:border-red-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="flex-1 space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Descrição dos Trabalhos</label>
+                          <textarea
+                            value={service.description}
+                            onChange={(e) => updateLibraryService(service.id, { description: e.target.value })}
+                            className="w-full bg-surface-secondary p-4 rounded-xl border border-border-main text-sm text-text-secondary focus:outline-none focus:border-accent transition-all resize-none min-h-[120px] leading-relaxed shadow-inner"
+                            placeholder="Descreva o que está incluído neste serviço..."
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Responsabilidades Arquitetura</label>
+                            <textarea
+                              value={service.architectResponsibilities || ''}
+                              onChange={(e) => updateLibraryService(service.id, { architectResponsibilities: e.target.value })}
+                              className="w-full bg-transparent p-3 border border-border-main rounded-xl font-mono text-[11px] h-24 focus:outline-none focus:border-accent leading-relaxed"
+                              placeholder="O que o gabinete deve entregar..."
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Responsabilidades Cliente</label>
+                            <textarea
+                              value={service.clientResponsibilities || ''}
+                              onChange={(e) => updateLibraryService(service.id, { clientResponsibilities: e.target.value })}
+                              className="w-full bg-transparent p-3 border border-border-main rounded-xl font-mono text-[11px] h-24 focus:outline-none focus:border-accent leading-relaxed"
+                              placeholder="Documentação a fornecer pelo cliente..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6 pt-4 border-t border-border-main/50">
+                        <button 
+                          onClick={() => updateLibraryService(service.id, { isIncludedByDefault: !service.isIncludedByDefault })}
+                          className={`flex items-center gap-2 group/check transition-all`}
+                        >
+                          <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
+                            service.isIncludedByDefault ? 'bg-accent text-canvas' : 'bg-surface-secondary border border-border-main'
+                          }`}>
+                            {service.isIncludedByDefault && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${service.isIncludedByDefault ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>Incluído por Omissão</span>
+                        </button>
+
+                        <button 
+                          onClick={() => updateLibraryService(service.id, { isOptional: !service.isOptional })}
+                          className={`flex items-center gap-2 group/check transition-all`}
+                        >
+                          <div className={`w-5 h-5 rounded flex items-center justify-center transition-all border ${
+                            service.isOptional ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-surface-secondary border-border-main'
+                          }`}>
+                            {service.isOptional && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${service.isOptional ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>Serviço Opcional</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {office.servicesLibrary.length === 0 && (
+                  <div className="py-24 flex flex-col items-center justify-center text-center space-y-6 border-2 border-dashed border-border-main rounded-[2.5rem] bg-surface-secondary/20">
+                     <div className="w-20 h-20 bg-surface border border-border-main rounded-3xl flex items-center justify-center shadow-xl shadow-black/5 rotate-3">
+                       <Briefcase className="w-10 h-10 text-text-secondary" />
+                     </div>
+                     <div className="space-y-2">
+                        <h3 className="text-2xl font-bold tracking-tight">Biblioteca Vazia</h3>
+                        <p className="text-text-secondary max-w-sm text-lg">Comece a construir a sua base de serviços para automatizar as propostas do seu gabinete.</p>
+                     </div>
+                     <button 
+                       onClick={addLibraryService}
+                       className="bg-accent text-canvas px-8 py-3 rounded-full font-bold text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-accent/20 flex items-center gap-2 mt-4"
+                     >
+                       <Plus className="w-4 h-4" /> Adicionar Primeiro Serviço
+                     </button>
+                  </div>
+                )}
+              </div>
+            )}
             {view === 'settings' && (
               <div className="max-w-4xl mx-auto space-y-12 py-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border-main pb-8">
@@ -5024,11 +5309,7 @@ export default function App() {
                           A sua biblioteca contém <strong>{office.servicesLibrary.length} serviços</strong> predefinidos que serão utilizados para gerar novas propostas.
                         </p>
                         <button 
-                          onClick={() => {
-                            setStep(2);
-                            setView('editor');
-                            setIsEditingGlobalOffice(true);
-                          }}
+                          onClick={() => setView('library')}
                           className="text-sm font-bold text-text-primary flex items-center gap-2 hover:gap-3 transition-all group"
                         >
                           Gerir Biblioteca <ChevronRight className="w-4 h-4 text-accent transition-transform group-hover:translate-x-1" />

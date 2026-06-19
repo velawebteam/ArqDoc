@@ -635,7 +635,7 @@ export interface Client {
   createdAt: string;
 }
 
-export type NavigationView = 'dashboard' | 'clients' | 'projects' | 'editor' | 'settings';
+export type NavigationView = 'dashboard' | 'clients' | 'projects' | 'editor' | 'settings' | 'library';
 
 export interface AppState {
   view: NavigationView;
