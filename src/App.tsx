@@ -55,8 +55,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import mammoth from 'mammoth';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { jsPDF } from 'jspdf';
 import { saveAs } from 'file-saver';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/views/DashboardView';
@@ -1235,9 +1233,22 @@ export default function App() {
       }
 
       const text = await response.text();
+      
+      let processedText = text;
+      // Strip markdown code block wrappers if they exist
+      if (processedText.startsWith('```')) {
+        const lines = processedText.split('\n');
+        if (lines[0].startsWith('```')) {
+          lines.shift(); // Remove first line
+          if (lines[lines.length - 1].startsWith('```')) {
+            lines.pop(); // Remove last line
+          }
+          processedText = lines.join('\n').trim();
+        }
+      }
 
-      if (text && text.trim().length > 0) {
-        setGeneratedDoc(text);
+      if (processedText && processedText.trim().length > 0) {
+        setGeneratedDoc(processedText);
         setStep(5); // Mostrar resultado
       } else {
         throw new Error("O Make.com não devolveu nenhum conteúdo para o documento.");
@@ -1265,37 +1276,66 @@ export default function App() {
   const downloadDocx = async () => {
     if (!generatedDoc) return;
     
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: generatedDoc.split('\n').map(line => {
-          return new Paragraph({
-            children: [
-              new TextRun({
-                text: line,
-                font: "Times New Roman",
-                size: 24, // 12pt
-              }),
-            ],
-          });
-        }),
-      }],
-    });
-
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `${docType.replace(/\//g, '-')}_${project.name || 'documento'}.docx`);
+    try {
+      const { marked } = await import('marked');
+      const htmlToDocx = (await import('html-to-docx')).default;
+      
+      const htmlContent = await marked.parse(generatedDoc);
+      // Basic styling for the Word document
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Times New Roman', serif; }
+            h1, h2, h3 { color: #000000; }
+            p { margin-bottom: 10px; }
+          </style>
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+        </html>
+      `;
+      
+      const blob = await htmlToDocx(fullHtml, null, {
+        table: { row: { cantSplit: true } },
+        footer: true,
+        pageNumber: true,
+      });
+      
+      saveAs(blob, `${docType.replace(/\//g, '-')}_${project.name || 'documento'}.docx`);
+    } catch (error) {
+      console.error('Error generating DOCX:', error);
+      // Fallback to simple download if it fails
+      const blob = new Blob([generatedDoc], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      saveAs(blob, `${docType.replace(/\//g, '-')}_${project.name || 'documento'}.docx`);
+    }
   };
 
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
     if (!generatedDoc) return;
     
-    const doc = new jsPDF();
-    const margin = 20;
-    const pageWidth = doc.internal.pageSize.width;
-    const lines = doc.splitTextToSize(generatedDoc, pageWidth - margin * 2);
-    
-    doc.text(lines, margin, margin);
-    doc.save(`${docType.replace(/\//g, '-')}_${project.name || 'documento'}.pdf`);
+    const element = document.getElementById('document-preview');
+    if (!element) return;
+
+    try {
+      // @ts-ignore
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      const opt = {
+        margin: 10,
+        filename: `${docType.replace(/\//g, '-')}_${project.name || 'documento'}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+
+      html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
   };
 
   const reset = () => {
@@ -4855,8 +4895,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-surface border border-border-main shadow-sm rounded-lg p-6 md:p-12 min-h-[600px] font-serif leading-loose text-text-primary text-lg lg:text-xl transition-colors">
-                    <div className="markdown-body max-w-3xl mx-auto break-words overflow-x-auto">
+                  <div className="bg-surface border border-border-main shadow-sm rounded-lg p-6 md:p-12 min-h-[600px] font-serif leading-relaxed text-text-primary text-lg lg:text-xl transition-colors">
+                    <div id="document-preview" className="markdown-body max-w-3xl mx-auto whitespace-pre-wrap break-words">
                       <ReactMarkdown>{generatedDoc || ''}</ReactMarkdown>
                     </div>
                   </div>

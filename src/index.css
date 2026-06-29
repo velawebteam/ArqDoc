@@ -42,6 +42,29 @@
     color: var(--text-primary);
   }
 
+  .markdown-body {
+    @apply text-text-primary leading-relaxed break-words;
+  }
+
+  .markdown-body p, 
+  .markdown-body li, 
+  .markdown-body h1, 
+  .markdown-body h2, 
+  .markdown-body h3, 
+  .markdown-body h4, 
+  .markdown-body h5, 
+  .markdown-body h6 {
+    @apply whitespace-pre-wrap break-words mb-4;
+  }
+
+  .markdown-body pre {
+    @apply whitespace-pre-wrap break-words bg-surface-secondary p-4 rounded-lg font-mono text-sm overflow-x-auto;
+  }
+
+  .markdown-body code {
+    @apply whitespace-pre-wrap break-words font-mono bg-surface-secondary px-1.5 py-0.5 rounded text-sm;
+  }
+
   * {
     scrollbar-width: none;
     -ms-overflow-style: none;
