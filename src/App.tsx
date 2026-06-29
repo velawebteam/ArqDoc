@@ -5,6 +5,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 import { 
   Building2, 
   User, 
@@ -1280,26 +1281,17 @@ export default function App() {
       const { marked } = await import('marked');
       const htmlToDocx = (await import('html-to-docx')).default;
       
-      const htmlContent = await marked.parse(generatedDoc);
-      // Basic styling for the Word document
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: 'Times New Roman', serif; }
-            h1, h2, h3 { color: #000000; }
-            p { margin-bottom: 10px; }
-          </style>
-        </head>
-        <body>
+      // Use breaks: true to treat single line breaks as <br>
+      const htmlContent = await marked.parse(generatedDoc, { breaks: true });
+      
+      // Simplify HTML for Word - html-to-docx handles the conversion better with simpler input
+      const containerHtml = `
+        <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.2;">
           ${htmlContent}
-        </body>
-        </html>
+        </div>
       `;
       
-      const blob = await htmlToDocx(fullHtml, null, {
+      const blob = await htmlToDocx(containerHtml, null, {
         table: { row: { cantSplit: true } },
         footer: true,
         pageNumber: true,
@@ -4896,8 +4888,8 @@ export default function App() {
                   </div>
 
                   <div className="bg-surface border border-border-main shadow-sm rounded-lg p-6 md:p-12 min-h-[600px] font-serif leading-relaxed text-text-primary text-lg lg:text-xl transition-colors">
-                    <div id="document-preview" className="markdown-body max-w-3xl mx-auto whitespace-pre-wrap break-words">
-                      <ReactMarkdown>{generatedDoc || ''}</ReactMarkdown>
+                    <div id="document-preview" className="markdown-body max-w-3xl mx-auto break-words">
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{generatedDoc || ''}</ReactMarkdown>
                     </div>
                   </div>
 
